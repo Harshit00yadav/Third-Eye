@@ -3,6 +3,20 @@ from curses import wrapper
 from curses.textpad import rectangle
 
 
+def read_logs(lines):
+    logs = ''
+    with open("server_logs.log", "r") as slogs:
+        nlines = slogs.readlines()
+        x = len(nlines) - lines
+        if x >= 0:
+            for nl in range(x, len(nlines) - 1):
+                logs += nlines[nl]
+        else:
+            for nl in nlines:
+                logs += nl
+    return logs
+
+
 class UI:
     def header_(self, stdscr):
         midx = self.cols // 2 - 9
@@ -71,6 +85,10 @@ class UI:
         stdscr.addstr('e', self.YOB)
         stdscr.addstr('→', self.GOB)
         stdscr.addstr('executor', self.WOB)
+        stdscr.addstr('] [', self.GOB)
+        stdscr.addstr('q', self.YOB)
+        stdscr.addstr('→', self.GOB)
+        stdscr.addstr('exit', self.WOB)
         stdscr.addstr(']', self.GOB)
         self.groups_(stdscr)
         self.httpd_logs_(stdscr)
@@ -78,7 +96,11 @@ class UI:
 
     def run(self, stdscr):
         stdscr = curses.initscr()
+        stdscr.timeout(500)
         self.rows, self.cols = stdscr.getmaxyx()
+        log_win_width = self.cols - 24
+        log_win_height = self.rows // 2 - 7
+        log_window = curses.newwin(log_win_height, log_win_width, 6, 22)
         curses.init_pair(1, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
@@ -92,9 +114,17 @@ class UI:
         stdscr.keypad(True)
 
         # -------- LOOP -------
-        self.header_(stdscr)
-        self.body_(stdscr)
-        stdscr.getch()
+        while True:
+            stdscr.clear()
+            self.header_(stdscr)
+            self.body_(stdscr)
+            stdscr.refresh()
+            logs = read_logs(log_win_height)
+            log_window.addstr(0, 0, logs)
+            log_window.refresh()
+            ch = stdscr.getch()
+            if ch == ord('q'):
+                break
         # ---------------------
 
         curses.nocbreak()

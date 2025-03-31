@@ -1,6 +1,6 @@
 from reverse_connection_listener import NetListener
 from executor_server import start_executor_server
-from multiprocessing import Process
+from threading import Thread
 from UI import UI
 import subprocess
 
@@ -20,7 +20,8 @@ def check_forwarding():
 
 
 if __name__ == "__main__":
-    # exec_serv_proc = Process(target=start_executor_server, args=[], daemon=True).start()
+    exec_serv_proc = Thread(target=start_executor_server, args=[], daemon=True)
+    exec_serv_proc.start()
     user_interface = UI()
     user_interface.start()
     '''

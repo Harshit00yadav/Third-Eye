@@ -10,7 +10,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
         self.wfile.write(b'hello world')
 
     def log_message(self, format, *args):
-        pass
+        with open("server_logs.log", "a") as slogs:
+            slogs.write(f"{self.client_address} {self.path}\n")
 
 
 def start_ngrok_forwarding():
@@ -24,8 +25,10 @@ def start_ngrok_forwarding():
 
 
 def start_executor_server():
-    Thread(target=start_ngrok_forwarding, args=[], daemon=True).start()
-    print("binding server")
-    httpd = HTTPServer(('', 8001), HTTPHandler)
-    print("starting server")
+    with open("server_logs.log", "w") as slogs:
+        slogs.write("starting ngrok daemon...\n")
+        Thread(target=start_ngrok_forwarding, args=[], daemon=True).start()
+        slogs.write("ngrok daemon started!\n")
+        httpd = HTTPServer(('', 8001), HTTPHandler)
+        slogs.write("httpd server bind to port 8001\n")
     httpd.serve_forever()
