@@ -7,8 +7,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b'<NULL>')
         conn.send(self.headers['X-Forwarded-For'])
+        msg = conn.recv()
+        self.wfile.write(msg)
 
     def log_message(self, format, *args):
         pass

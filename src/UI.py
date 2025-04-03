@@ -5,25 +5,12 @@ from multiprocessing.connection import Listener
 from threading import Thread
 
 
-def read_logs(lines):
-    logs = ''
-    with open("logs/server_logs.log", "r") as slogs:
-        nlines = slogs.readlines()
-        x = len(nlines) - lines
-        if x >= 0:
-            for nl in range(x, len(nlines) - 1):
-                logs += nlines[nl]
-        else:
-            for nl in nlines:
-                logs += nl
-    return logs
-
-
 class UI:
     def __init__(self):
         self.socket_addr = ('localhost', 6000)
         self.listener = Listener(self.socket_addr, authkey=b'intcomm')
         self.conn = self.listener.accept()
+        self.inactive_threshold = 25
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
         stdscr = curses.initscr()
@@ -52,7 +39,11 @@ class UI:
         try:
             while True:
                 msg = self.conn.recv()
-                self.IPs[msg] = 10
+                if msg == self.selector_ip:
+                    self.conn.send(b"<INTERACT>")
+                else:
+                    self.conn.send(b"<NULL>")
+                self.IPs[msg] = self.inactive_threshold
         finally:
             self.listener.close()
             self.conn.close()
@@ -133,11 +124,50 @@ class UI:
         self.httpd_logs_(stdscr)
         self.agents_(stdscr)
 
+    def agent_window_refresh(self):
+        agents = ''
+        self.agents_win.addstr(0, 0, agents)
+        if len(self.IPs) == 0:
+            self.selector = None
+            self.selector_ip = None
+        else:
+            if self.selector is None:
+                self.selector = 0
+            for indx, ip in enumerate(self.IPs.keys()):
+                if self.selector == indx:
+                    self.agents_win.addstr(f" ⦿  {ip}\n", self.YOBI)
+                    self.selector_ip = ip
+                else:
+                    self.agents_win.addstr(f" ⦿  {ip}\n")
+        self.agents_win.addstr(0, 0, agents)
+        self.agents_win.refresh()
+
+    def add_to_logs(self, string):
+        self.LOGS += '\n' + string
+        lgs_ = self.LOGS.split('\n')
+        if len(lgs_) > self.log_win_height:
+            self.LOGS = '\n'.join(lgs_[1:])
+
+    def key_event_handler(self, ch):
+        if ch == ord('q'):
+            return 1
+        elif ch == ord('j'):
+            if self.selector is not None and self.selector < len(self.IPs) - 1:
+                self.selector += 1
+        elif ch == ord('k'):
+            if self.selector is not None and self.selector > 0:
+                self.selector -= 1
+        elif ch == ord('i'):
+            if self.selector is not None:
+                self.add_to_logs("sending interact signal")
+        return 0
+
     def run(self, stdscr):
         curses.init_pair(1, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
         self.YOB = curses.color_pair(1)
+        self.YOBI = self.YOB | curses.A_REVERSE
         self.WOB = curses.color_pair(2) | curses.A_BOLD
         self.GOB = curses.color_pair(3) | curses.A_DIM
         curses.noecho()
@@ -154,12 +184,11 @@ class UI:
 
             self.log_window.addstr(0, 0, self.LOGS)
             self.log_window.refresh()
+            self.agent_window_refresh()
 
-            agents = '\n'.join([f" + {ip} {self.IPs[ip]}" for ip in self.IPs.keys()])
-            self.agents_win.addstr(0, 0, agents)
-            self.agents_win.refresh()
             ch = stdscr.getch()
-            if ch == ord('q'):
+            exit_ = self.key_event_handler(ch)
+            if exit_:
                 break
             for ip in self.IPs.keys():
                 self.IPs[ip] -= 1
