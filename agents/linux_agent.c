@@ -46,6 +46,7 @@ void get_executors_command(){
 		}
 		if (strcmp(response.string, "<NULL>") == 0){
 			printf("do nothing\n");
+			sleep(1);
 		} else if (strcmp(response.string, "<INTERACT>") == 0){
 			int pid = fork();
 			if (pid == 0){

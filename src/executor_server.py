@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from subprocess import Popen, PIPE
-from multiprocessing import Process
+from multiprocessing.connection import Client
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -8,10 +8,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'<NULL>')
+        conn.send(self.headers['X-Forwarded-For'])
 
     def log_message(self, format, *args):
-        with open("server_logs.log", "a") as slogs:
-            slogs.write(f"{self.headers['X-Forwarded-For']} {self.path}\n")
+        pass
 
 
 def start_ngrok_forwarding():
@@ -25,7 +25,11 @@ def start_ngrok_forwarding():
 
 
 def start_executor_server():
-    with open("server_logs.log", "w") as slogs:
-        httpd = HTTPServer(('', 8001), HTTPHandler)
-        slogs.write("httpd server bind to port 8001\n")
-    httpd.serve_forever()
+    global conn
+    addr = ('localhost', 6000)
+    conn = Client(addr, authkey=b'intcomm')
+    httpd = HTTPServer(('', 8001), HTTPHandler)
+    try:
+        httpd.serve_forever()
+    finally:
+        conn.close()
