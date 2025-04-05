@@ -5,6 +5,13 @@ from multiprocessing.connection import Listener
 from threading import Thread
 
 
+def popup_rectangle(win, uly, ulx, lry, lrx):
+    rectangle(win, uly, ulx, lry, lrx)
+    n = lrx - ulx + 1
+    win.addstr(uly - 1, ulx, u'\u2588' * n)
+    win.addstr(lry + 1, ulx, u'\u2588' * n)
+
+
 class UI:
     def __init__(self):
         self.socket_addr = ('localhost', 6000)
@@ -12,6 +19,7 @@ class UI:
         self.conn = self.listener.accept()
         self.inactive_threshold = 25
         self.send_signal = False
+        self.popup_message = None
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
         stdscr = curses.initscr()
@@ -35,6 +43,18 @@ class UI:
         )
         self.cols -= 1
         self.rows -= 2
+
+    def show_alert(self, msg, time):
+        self.popup_message = msg
+        self.popup_time_counter = time
+
+    def alert_popup(self, stdscr, msg):
+        y = self.rows // 2
+        x = (self.cols // 2) - (len(msg) // 2) - 2
+        stdscr.attron(self.ROB)
+        popup_rectangle(stdscr, y - 1, x, y + 1, x + len(msg) + 3)
+        stdscr.addstr(y, x + 1, f" {msg} ")
+        stdscr.attroff(self.ROB)
 
     def listen_socket(self):
         try:
@@ -164,16 +184,20 @@ class UI:
             if self.selector is not None:
                 self.send_signal = True
                 self.add_to_logs(f"<INTERACT> --> {self.selector_ip}")
+            else:
+                self.show_alert("Bad Agent", 5)
         return 0
 
     def run(self, stdscr):
         curses.init_pair(1, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
         self.YOB = curses.color_pair(1)
         self.YOBI = self.YOB | curses.A_REVERSE
         self.WOB = curses.color_pair(2) | curses.A_BOLD
         self.GOB = curses.color_pair(3) | curses.A_DIM
+        self.ROB = curses.color_pair(4) | curses.A_BOLD
         curses.noecho()
         curses.cbreak()
         stdscr.keypad(True)
@@ -189,6 +213,11 @@ class UI:
             self.log_window.addstr(0, 0, self.LOGS)
             self.log_window.refresh()
             self.agent_window_refresh()
+            if self.popup_message is not None:
+                self.alert_popup(stdscr, self.popup_message)
+                self.popup_time_counter -= 1
+                if self.popup_time_counter < 0:
+                    self.popup_message = None
 
             ch = stdscr.getch()
             exit_ = self.key_event_handler(ch)
