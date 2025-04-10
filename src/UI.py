@@ -1,4 +1,5 @@
 import curses
+import subprocess
 from curses import wrapper
 from curses.textpad import rectangle
 from multiprocessing.connection import Listener
@@ -10,6 +11,22 @@ def popup_rectangle(win, uly, ulx, lry, lrx):
     n = lrx - ulx + 1
     win.addstr(uly - 1, ulx, u'\u2588' * n)
     win.addstr(lry + 1, ulx, u'\u2588' * n)
+
+
+def check_forwarding(port):
+    try:
+        res = subprocess.run(
+            "ps -u",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        if f"ssh -R {port}" in res.stdout:
+            return 0
+        return 1
+    except Exception as e:
+        print(e)
+        return 1
 
 
 class UI:
@@ -158,10 +175,10 @@ class UI:
                 self.selector = 0
             for indx, ip in enumerate(self.IPs.keys()):
                 if self.selector == indx:
-                    self.agents_win.addstr(f" ⦿  {ip}\n", self.YOBI)
+                    self.agents_win.addstr(f" ⦿  {ip} \n", self.YOBI)
                     self.selector_ip = ip
                 else:
-                    self.agents_win.addstr(f" ⦿  {ip}\n")
+                    self.agents_win.addstr(f" ⦿  {ip} \n")
         self.agents_win.addstr(0, 0, agents)
         self.agents_win.refresh()
 
@@ -182,10 +199,13 @@ class UI:
                 self.selector -= 1
         elif ch == ord('i'):
             if self.selector is not None:
-                self.send_signal = True
-                self.add_to_logs(f"<INTERACT> --> {self.selector_ip}")
+                if check_forwarding(49152) == 0:
+                    self.send_signal = True
+                    self.add_to_logs(f"<INTERACT> --> {self.selector_ip}")
+                else:
+                    self.show_alert("SSH Forwarding not detected", 3)
             else:
-                self.show_alert("Bad Agent", 5)
+                self.show_alert("Bad Agent", 3)
         return 0
 
     def run(self, stdscr):
