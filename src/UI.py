@@ -39,6 +39,7 @@ class UI:
         self.popup_message = None
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
+        self.EXECUTOR_MESSAGE = b'<NULL>'
         stdscr = curses.initscr()
         stdscr.timeout(500)
         self.rows, self.cols = stdscr.getmaxyx()
@@ -82,7 +83,7 @@ class UI:
                     self.send_signal = False
                     self.add_to_logs("Signal recieved!")
                 else:
-                    self.conn.send(b"<NULL>")
+                    self.conn.send(self.EXECUTOR_MESSAGE)
                 self.IPs[msg] = self.inactive_threshold
         finally:
             self.listener.close()
@@ -206,6 +207,11 @@ class UI:
                     self.show_alert("SSH Forwarding not detected", 3)
             else:
                 self.show_alert("Bad Agent", 3)
+        elif ch == ord('e'):
+            self.show_alert("Spawn Executor Shell", 3)
+            # self.EXECUTOR_MESSAGE = bytes("updated message", "utf-8")
+        elif ch == ord('t'):
+            self.show_alert(f"{self.EXECUTOR_MESSAGE}", 3)
         return 0
 
     def run(self, stdscr):
