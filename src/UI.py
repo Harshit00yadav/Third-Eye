@@ -1,7 +1,7 @@
 import curses
 import subprocess
 from curses import wrapper
-from curses.textpad import rectangle
+from curses.textpad import rectangle, Textbox
 from multiprocessing.connection import Listener
 from threading import Thread
 
@@ -31,15 +31,18 @@ def check_forwarding(port):
 
 class UI:
     def __init__(self):
+        self._init_signals()
         self.socket_addr = ('localhost', 6000)
         self.listener = Listener(self.socket_addr, authkey=b'intcomm')
         self.conn = self.listener.accept()
         self.inactive_threshold = 25
         self.send_signal = False
+        self.signal = None
+        self.spawn_terminal = False
         self.popup_message = None
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
-        self.EXECUTOR_MESSAGE = b'<NULL>'
+        self.EXECUTOR_MESSAGE = self.SLEE_SIG
         stdscr = curses.initscr()
         stdscr.timeout(500)
         self.rows, self.cols = stdscr.getmaxyx()
@@ -62,6 +65,11 @@ class UI:
         self.cols -= 1
         self.rows -= 2
 
+    def _init_signals(self):
+        self.TERM_SIG = b"<TERMINATE>"
+        self.INTR_SIG = b"<INTERACT>"
+        self.SLEE_SIG = b"<SLEEP>"
+
     def show_alert(self, msg, time):
         self.popup_message = msg
         self.popup_time_counter = time
@@ -79,8 +87,9 @@ class UI:
             while True:
                 msg = self.conn.recv()
                 if msg == self.selector_ip and self.send_signal:
-                    self.conn.send(b"<INTERACT>")
+                    self.conn.send(self.signal)
                     self.send_signal = False
+                    self.signal = None
                     self.add_to_logs("Signal recieved!")
                 else:
                     self.conn.send(self.EXECUTOR_MESSAGE)
@@ -136,6 +145,26 @@ class UI:
         stdscr.addstr(" Agents ", self.WOB)
         stdscr.addstr("|", self.GOB)
 
+    def spawn_executor_terminal(self, stdscr):
+        height, width = 1, 30
+        top, left = self.rows // 2 - 1, (self.cols // 2) - (width // 2)
+        stdscr.attron(self.GOB)
+        rectangle(
+            stdscr,
+            top - 1,
+            left - 1,
+            top + height,
+            left + width
+        )
+        stdscr.attroff(self.GOB)
+        stdscr.refresh()
+        window = curses.newwin(height, width, top, left)
+        window.clear()
+        box = Textbox(window)
+        box.edit()
+        contents = box.gather().strip()
+        return contents
+
     def body_(self, stdscr):
         stdscr.attron(self.GOB)
         rectangle(stdscr, 4, 0, self.rows, self.cols)
@@ -164,6 +193,11 @@ class UI:
         self.groups_(stdscr)
         self.httpd_logs_(stdscr)
         self.agents_(stdscr)
+        if self.spawn_terminal:
+            content = self.spawn_executor_terminal(stdscr)
+            self.EXECUTOR_MESSAGE = bytes(content, "utf-8")
+            self.spawn_terminal = False
+            self.add_to_logs(f"EXEC_MESSAGE = {content}")
 
     def agent_window_refresh(self):
         agents = ''
@@ -202,16 +236,18 @@ class UI:
             if self.selector is not None:
                 if check_forwarding(49152) == 0:
                     self.send_signal = True
-                    self.add_to_logs(f"<INTERACT> --> {self.selector_ip}")
+                    self.signal = self.INTR_SIG
+                    self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
                 else:
                     self.show_alert("SSH Forwarding not detected", 3)
             else:
                 self.show_alert("Bad Agent", 3)
         elif ch == ord('e'):
-            self.show_alert("Spawn Executor Shell", 3)
-            # self.EXECUTOR_MESSAGE = bytes("updated message", "utf-8")
+            self.spawn_terminal = True
         elif ch == ord('t'):
-            self.show_alert(f"{self.EXECUTOR_MESSAGE}", 3)
+            self.send_signal = True
+            self.signal = self.TERM_SIG
+            self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
         return 0
 
     def run(self, stdscr):

