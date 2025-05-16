@@ -86,6 +86,10 @@ class UI:
         try:
             while True:
                 msg = self.conn.recv()
+                if msg == self.selector_ip and self.signal == self.TERM_SIG:
+                    secs = 0
+                else:
+                    secs = self.inactive_threshold
                 if msg == self.selector_ip and self.send_signal:
                     self.conn.send(self.signal)
                     self.send_signal = False
@@ -93,7 +97,7 @@ class UI:
                     self.add_to_logs("Signal recieved!")
                 else:
                     self.conn.send(self.EXECUTOR_MESSAGE)
-                self.IPs[msg] = self.inactive_threshold
+                self.IPs[msg] = secs
         finally:
             self.listener.close()
             self.conn.close()

