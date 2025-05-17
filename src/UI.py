@@ -1,5 +1,4 @@
 import curses
-import subprocess
 from curses import wrapper
 from curses.textpad import rectangle, Textbox
 from multiprocessing.connection import Listener
@@ -11,22 +10,6 @@ def popup_rectangle(win, uly, ulx, lry, lrx):
     n = lrx - ulx + 1
     win.addstr(uly - 1, ulx, u'\u2588' * n)
     win.addstr(lry + 1, ulx, u'\u2588' * n)
-
-
-def check_forwarding(port):
-    try:
-        res = subprocess.run(
-            "ps -u",
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-        if f"ssh -R {port}" in res.stdout:
-            return 0
-        return 1
-    except Exception as e:
-        print(e)
-        return 1
 
 
 class UI:
@@ -43,6 +26,7 @@ class UI:
         self.IPs = {}
         self.LOGS = 'starting http daemon ...\nstarting sockets on 6000....'
         self.EXECUTOR_MESSAGE = self.SLEE_SIG
+        self.INTERACTION_URL = None
         stdscr = curses.initscr()
         stdscr.timeout(500)
         self.rows, self.cols = stdscr.getmaxyx()
@@ -149,8 +133,8 @@ class UI:
         stdscr.addstr(" Agents ", self.WOB)
         stdscr.addstr("|", self.GOB)
 
-    def spawn_executor_terminal(self, stdscr):
-        height, width = 1, 30
+    def spawn_input_terminal(self, stdscr):
+        height, width = 1, 55
         top, left = self.rows // 2 - 1, (self.cols // 2) - (width // 2)
         stdscr.attron(self.GOB)
         rectangle(
@@ -198,10 +182,15 @@ class UI:
         self.httpd_logs_(stdscr)
         self.agents_(stdscr)
         if self.spawn_terminal:
-            content = self.spawn_executor_terminal(stdscr)
-            self.EXECUTOR_MESSAGE = bytes(content, "utf-8")
+            content = self.spawn_input_terminal(stdscr)
             self.spawn_terminal = False
-            self.add_to_logs(f"EXEC_MESSAGE = {content}")
+            if self.signal == self.INTR_SIG:
+                self.INTERACTION_URL = bytes(content, 'utf-8')
+                self.signal += b'@' + self.INTERACTION_URL
+                self.send_signal = True
+            else:
+                self.EXECUTOR_MESSAGE = bytes(content, 'utf-8')
+                self.add_to_logs(f"EXEC_MESSAGE = {content}")
 
     def agent_window_refresh(self):
         agents = ''
@@ -238,12 +227,9 @@ class UI:
                 self.selector -= 1
         elif ch == ord('i'):
             if self.selector is not None:
-                if check_forwarding(49152) == 0:
-                    self.send_signal = True
-                    self.signal = self.INTR_SIG
-                    self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
-                else:
-                    self.show_alert("SSH Forwarding not detected", 3)
+                self.signal = self.INTR_SIG
+                self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
+                self.spawn_terminal = True
             else:
                 self.show_alert("Bad Agent", 3)
         elif ch == ord('e'):
