@@ -1,3 +1,4 @@
+import sys
 import curses
 from curses import wrapper
 from curses.textpad import rectangle, Textbox
@@ -134,7 +135,7 @@ class UI:
         stdscr.addstr("|", self.GOB)
 
     def spawn_input_terminal(self, stdscr):
-        height, width = 1, 55
+        height, width = 1, 65
         top, left = self.rows // 2 - 1, (self.cols // 2) - (width // 2)
         stdscr.attron(self.GOB)
         rectangle(
@@ -151,6 +152,7 @@ class UI:
         box = Textbox(window)
         box.edit()
         contents = box.gather().strip()
+        contents = contents.replace('[200~', '').replace('[201~', '')
         return contents
 
     def body_(self, stdscr):
@@ -290,4 +292,8 @@ class UI:
 
     def start(self):
         Thread(target=self.listen_socket, args=[], daemon=True).start()
+        sys.stdout.write("\x1b[?2004h")
+        sys.stdout.flush()
         wrapper(self.run)
+        sys.stdout.write("\x1b[?2004l")
+        sys.stdout.flush()
