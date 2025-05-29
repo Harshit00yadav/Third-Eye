@@ -12,7 +12,11 @@ class HTTPHandler(BaseHTTPRequestHandler):
         self.wfile.write(msg)
 
     def log_message(self, format, *args):
-        pass
+        try:
+            conn.send(f"[ LOG ] {self.requestline}")
+            conn.recv()
+        except Exception as e:
+            print(e)
 
 
 def start_ngrok_forwarding():

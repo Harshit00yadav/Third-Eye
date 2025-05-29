@@ -80,6 +80,10 @@ class UI:
                     self.send_signal = False
                     self.signal = None
                     self.add_to_logs("Signal recieved!")
+                elif "[ LOG ]" in msg:
+                    self.add_to_logs(msg)
+                    self.conn.send('got it')
+                    continue
                 else:
                     self.conn.send(self.EXECUTOR_MESSAGE)
                 self.IPs[msg] = secs
