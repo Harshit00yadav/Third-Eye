@@ -1,4 +1,6 @@
 #!/usr/bin/bash
 
+source CDEVENV/bin/activate
 python src/3E.py
+deactivate
 pkill ngrok

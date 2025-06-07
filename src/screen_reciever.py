@@ -1,0 +1,22 @@
+import socket
+import numpy
+import cv2
+import zlib
+
+
+def view_agent_screen():
+    BUFFERSIZE = 65536
+    server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server.bind(("0.0.0.0", 49153))
+    while True:
+        data, addr = server.recvfrom(BUFFERSIZE)
+        try:
+            decompressed = zlib.decompress(data)
+            np_arr = numpy.frombuffer(decompressed, numpy.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            if frame is not None:
+                cv2.imshow("Received", frame)
+            if cv2.waitKey(1) == 27:
+                break
+        except zlib.error as e:
+            print("Decompression error:", e)

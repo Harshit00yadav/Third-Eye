@@ -3,6 +3,8 @@ import curses
 from curses import wrapper
 from curses.textpad import rectangle, Textbox
 from multiprocessing.connection import Listener
+from multiprocessing import Process
+from screen_reciever import view_agent_screen
 from threading import Thread
 
 
@@ -16,10 +18,11 @@ def popup_rectangle(win, uly, ulx, lry, lrx):
 class UI:
     def __init__(self):
         self._init_signals()
-        self.socket_addr = ('localhost', 6000)
+        self.socket_addr = ('localhost', 36250)
         self.listener = Listener(self.socket_addr, authkey=b'intcomm')
         self.conn = self.listener.accept()
         self.inactive_threshold = 25
+        self.pid_vas = None
         self.send_signal = False
         self.signal = None
         self.spawn_terminal = False
@@ -54,6 +57,8 @@ class UI:
         self.TERM_SIG = b"<TERMINATE>"
         self.INTR_SIG = b"<INTERACT>"
         self.SLEE_SIG = b"<SLEEP>"
+        self.VIEW_SIG = b"<VIEWSCREEN>"
+        self.STOP_SIG = b"<STOPSCREEN>"
 
     def show_alert(self, msg, time):
         self.popup_message = msg
@@ -172,13 +177,17 @@ class UI:
         stdscr.addstr('→', self.GOB)
         stdscr.addstr('interact', self.WOB)
         stdscr.addstr('] [', self.GOB)
-        stdscr.addstr('t', self.YOB)
+        stdscr.addstr('v', self.YOB)
         stdscr.addstr('→', self.GOB)
-        stdscr.addstr('terminate', self.WOB)
+        stdscr.addstr('open', self.WOB)
         stdscr.addstr('] [', self.GOB)
         stdscr.addstr('e', self.YOB)
         stdscr.addstr('→', self.GOB)
         stdscr.addstr('executor', self.WOB)
+        stdscr.addstr('] [', self.GOB)
+        stdscr.addstr('t', self.YOB)
+        stdscr.addstr('→', self.GOB)
+        stdscr.addstr('terminate', self.WOB)
         stdscr.addstr('] [', self.GOB)
         stdscr.addstr('q', self.YOB)
         stdscr.addstr('→', self.GOB)
@@ -194,6 +203,13 @@ class UI:
                 self.INTERACTION_URL = bytes(content, 'utf-8')
                 self.signal += b'@' + self.INTERACTION_URL
                 self.send_signal = True
+            elif self.signal == self.VIEW_SIG:
+                self.VIEW_URL = bytes(content, 'utf-8')
+                self.signal += b'@' + self.VIEW_URL
+                self.send_signal = True
+                self.pid_vas = Process(target=view_agent_screen, args=[])
+                self.pid_vas.start()
+                self.add_to_logs("[ ON ] Screen Reciever")
             else:
                 self.EXECUTOR_MESSAGE = bytes(content, 'utf-8')
                 self.add_to_logs(f"EXEC_MESSAGE = {content}")
@@ -224,6 +240,7 @@ class UI:
 
     def key_event_handler(self, ch):
         if ch == ord('q'):
+            self.pid_vas.kill()
             return 1
         elif ch == ord('j'):
             if self.selector is not None and self.selector < len(self.IPs) - 1:
@@ -238,12 +255,24 @@ class UI:
                 self.spawn_terminal = True
             else:
                 self.show_alert("Bad Agent", 3)
+        elif ch == ord('v'):
+            if self.selector is not None:
+                self.signal = self.VIEW_SIG
+                self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
+                self.spawn_terminal = True
+            else:
+                self.show_alert("Bad Agent", 3)
         elif ch == ord('e'):
             self.spawn_terminal = True
         elif ch == ord('t'):
             self.send_signal = True
             self.signal = self.TERM_SIG
             self.add_to_logs(f"{self.signal} --> {self.selector_ip}")
+        if self.pid_vas is not None and not self.pid_vas.is_alive():
+            self.pid_vas = None
+            self.send_signal = True
+            self.signal = self.STOP_SIG
+            self.add_to_logs("[ OFF ] Screen Reciever")
         return 0
 
     def run(self, stdscr):

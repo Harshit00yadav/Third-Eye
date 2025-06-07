@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from subprocess import Popen, PIPE
 from multiprocessing.connection import Client
+from time import sleep
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -31,7 +32,8 @@ def start_ngrok_forwarding():
 
 def start_executor_server():
     global conn
-    addr = ('localhost', 6000)
+    addr = ('localhost', 36250)
+    sleep(1)
     conn = Client(addr, authkey=b'intcomm')
     httpd = HTTPServer(('', 8001), HTTPHandler)
     try:
