@@ -4,7 +4,7 @@ from curses import wrapper
 from curses.textpad import rectangle, Textbox
 from multiprocessing.connection import Listener
 from multiprocessing import Process
-from screen_reciever import view_agent_screen
+from screen_reciever import view_agentscreen
 from threading import Thread
 
 
@@ -207,7 +207,7 @@ class UI:
                 self.VIEW_URL = bytes(content, 'utf-8')
                 self.signal += b'@' + self.VIEW_URL
                 self.send_signal = True
-                self.pid_vas = Process(target=view_agent_screen, args=[])
+                self.pid_vas = Process(target=view_agentscreen, args=[content])
                 self.pid_vas.start()
                 self.add_to_logs("[ ON ] Screen Reciever")
             else:
