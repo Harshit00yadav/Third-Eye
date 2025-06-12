@@ -20,7 +20,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    PORT = 8888
+    PORT = 49152
     print('Starting Listener...')
     httpd = HTTPServer(('', PORT), HTTPHandler)
     print(f'listener initiated on port {PORT}')

@@ -1,7 +1,6 @@
 import socket
-import numpy
+import numpy as np
 import cv2
-import zlib
 import stun
 from random import randint
 
@@ -19,18 +18,19 @@ class Peer:
         self.port = randint(1000, 9999)
 
     def listen(self, buffersize):
+        buffer = bytearray()
         while True:
             data, addr = self.peer_socket.recvfrom(buffersize)
-            try:
-                decompressed = zlib.decompress(data)
-                np_arr = numpy.frombuffer(decompressed, numpy.uint8)
-                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-                if frame is not None:
-                    cv2.imshow("Received", frame)
-                if cv2.waitKey(1) == 27:
-                    break
-            except zlib.error as e:
-                print("Decompression error:", e)
+            if data == b'--end--':
+                img_arr = np.frombuffer(buffer, dtype=np.uint8)
+                img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+                if img is not None:
+                    cv2.imshow('live', img)
+                    if cv2.waitKey(1) == 27:
+                        break
+                buffer = bytearray()
+            else:
+                buffer.extend(data)
 
     def get_public_ip(self):
         _, public_ip, _ = stun.get_ip_info(
@@ -62,9 +62,13 @@ class Peer:
 
 
 def view_agentscreen(addr_str):
-    BUFFERSIZE = 65536
+    BUFFERSIZE = 2**16 - 64
     p = Peer()
     tcp_saddr = (addr_str.split(':')[0], int(addr_str.split(':')[1]))
     p2addr = p.get_rendezvous_data(tcp_saddr)
     p.punch_hole(p2addr)
     p.listen(BUFFERSIZE)
+
+
+if __name__ == "__main__":
+    view_agentscreen('localhost:8888')
