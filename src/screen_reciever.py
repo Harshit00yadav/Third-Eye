@@ -22,12 +22,15 @@ class Peer:
         while True:
             data, addr = self.peer_socket.recvfrom(buffersize)
             if data == b'--end--':
-                img_arr = np.frombuffer(buffer, dtype=np.uint8)
-                img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-                if img is not None:
-                    cv2.imshow('live', img)
-                    if cv2.waitKey(1) == 27:
-                        break
+                try:
+                    img_arr = np.frombuffer(buffer, dtype=np.uint8)
+                    img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+                    if img is not None:
+                        cv2.imshow('live', img)
+                        if cv2.waitKey(1) == 27:
+                            break
+                except Exception:
+                    pass
                 buffer = bytearray()
             else:
                 buffer.extend(data)

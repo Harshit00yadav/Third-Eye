@@ -240,7 +240,8 @@ class UI:
 
     def key_event_handler(self, ch):
         if ch == ord('q'):
-            self.pid_vas.kill()
+            if self.pid_vas is not None:
+                self.pid_vas.kill()
             return 1
         elif ch == ord('j'):
             if self.selector is not None and self.selector < len(self.IPs) - 1:
