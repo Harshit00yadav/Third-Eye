@@ -3,6 +3,8 @@ from subprocess import Popen, PIPE
 from multiprocessing.connection import Client
 from time import sleep
 
+C2URL = "allegedly-great-shiner.ngrok-free.app"
+
 
 class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -22,7 +24,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 def start_ngrok_forwarding():
     Popen(
-        "ngrok http --url=allegedly-great-shiner.ngrok-free.app 8001",
+        f"ngrok http --url={C2URL} 8001",
         stdin=PIPE,
         stdout=PIPE,
         stderr=PIPE,

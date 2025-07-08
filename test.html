@@ -1,0 +1,68 @@
+<h1>Third-Eye</h1>
+<h1>Remote Administration Tool (RAT) Over HTTPS</h1>
+<p>This is a C&amp;C (Command and Control) server designed for managing and interacting with multiple remote agents over secure HTTPS. It supports reverse shell access and screen sharing using a peer-to-peer UDP-based connection.</p>
+<blockquote>
+<p>⚠️ <strong>Disclaimer:</strong> This project is intended for educational and authorized security testing purposes <strong>only</strong>. Unauthorized access to systems without explicit permission is illegal and unethical. The developers assume no responsibility for misuse of this tool.</p>
+</blockquote>
+<hr>
+<h2>✨ Features</h2>
+<ul>
+<li><strong>Reverse HTTPS Shell</strong>: Secure encrypted shell communication between the server (master) and agents.</li>
+<li><strong>P2P Screen Sharing</strong>: Real-time view of the infected agent’s screen using peer-to-peer UDP.</li>
+<li><strong>Multi-Agent Management</strong>: Interact with and control multiple agents at once.</li>
+</ul>
+<hr>
+<h2>🛠️ Actions and Controls</h2>
+<p>| Key | Action Description |
+|-----|---------------------|
+| <code>j/k</code> | Scroll through connected agents |
+| <code>i</code> | Interact with the selected agent (start reverse shell) |
+| <code>v</code> | View the selected agent's screen (P2P UDP stream) |
+| <code>e</code> | Execute a command on <strong>all connected agents</strong> simultaneously |
+| <code>t</code> | Terminate connection with the selected agent |
+| <code>q</code> | Exit the C&amp;C interface |</p>
+<hr>
+<h2>🔒 Architecture Overview</h2>
+<ul>
+<li><strong>C&amp;C Server</strong>: Accepts reverse HTTPS connections from agents and offers a CLI interface for the master to interact.</li>
+<li><strong>Agent</strong>: Connects to the C&amp;C server, awaits instructions, and can:<ul>
+<li>Launch reverse shell</li>
+<li>Stream screen via P2P connection</li>
+</ul>
+</li>
+<li><strong>Transport</strong>:<ul>
+<li>Control Commands: Encrypted HTTPS</li>
+<li>Screen Sharing: UDP (peer-to-peer)</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2>📦 Requirements</h2>
+<ul>
+<li>python version 3</li>
+<li>C compiler (e.g., <code>gcc</code>)</li>
+<li>OpenSSL or equivalent for HTTPS</li>
+<li>Unix-like system (Linux recommended)</li>
+</ul>
+<hr>
+<h2>🚀 Usage</h2>
+<ol>
+<li><strong>Add you ngrok auth token</strong><pre><code class="language-bash">ngrok config add-authtoken &lt;token&gt;
+
+</code></pre>
+</li>
+<li><strong>Update your custom C&amp;C server url</strong><ul>
+<li><em>server</em><ul>
+<li>src/executor_server.py &gt; C2URL = &quot;your custom url&quot;</li>
+</ul>
+</li>
+<li><em>agent</em><ul>
+<li>agents/win/malware/src/windows_agent.py &gt; C2URL = &quot;your custom url&quot;</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>run the server</strong><pre><code class="language-bash">./3E
+</code></pre>
+</li>
+</ol>
