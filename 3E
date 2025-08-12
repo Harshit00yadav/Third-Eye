@@ -1,7 +1,17 @@
 #!/usr/bin/bash
 
 virtual_environment="./CDEVENV"
-C2URL="allegedly-great-shiner.ngrok-free.app"
+C2URL=""
+if [ ! -f .c2url.conf ]; then
+	echo "[ FAILED ] public url not found!"
+	echo "public URL: "
+	read puburl
+	echo $puburl > .c2url.conf
+	C2URL=$puburl
+else
+	echo "[ OK ] public url found."
+	C2URL=$(< .c2url.conf)
+fi
 
 if [ ! -d "$virtual_environment" ]; then
 	echo "[ FAILED ] virtual environment not found!"
