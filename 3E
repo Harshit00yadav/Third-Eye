@@ -34,7 +34,7 @@ else
 fi
 
 echo " * Starting ngrok port forwarding."
-ngrok http --url=$C2URL 8001 &
+ngrok http --url=$C2URL 8001 > /dev/null &
 python src/3E.py
 deactivate
 pkill ngrok
