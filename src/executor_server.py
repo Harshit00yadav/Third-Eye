@@ -7,7 +7,11 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        conn.send(self.headers['X-Forwarded-For'])
+        conn.send(
+            self.headers['User-Agent'] +
+            ": " +
+            self.headers['X-Forwarded-For']
+        )
         msg = conn.recv()
         self.wfile.write(msg)
 

@@ -233,10 +233,11 @@ class UI:
         self.agents_win.refresh()
 
     def add_to_logs(self, string):
-        self.LOGS += '\n' + string
+        self.LOGS += '\n' + string[:self.log_win_width-1]
         lgs_ = self.LOGS.split('\n')
-        if len(lgs_) > self.log_win_height:
-            self.LOGS = '\n'.join(lgs_[1:])
+        n = len(lgs_) - self.log_win_height
+        if n > 0:
+            self.LOGS = '\n'.join(lgs_[n:])
 
     def key_event_handler(self, ch):
         if ch == ord('q'):
@@ -298,8 +299,11 @@ class UI:
             self.body_(stdscr)
             stdscr.refresh()
 
-            self.log_window.addstr(0, 0, self.LOGS)
-            self.log_window.refresh()
+            try:
+                self.log_window.addstr(0, 0, self.LOGS)
+                self.log_window.refresh()
+            except Exception as e:
+                self.alert_popup(stdscr, str(e))
             self.agent_window_refresh()
             if self.popup_message is not None:
                 self.alert_popup(stdscr, self.popup_message)

